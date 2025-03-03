@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>告警设置</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f2f2f2;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 50px auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      padding: 30px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #555;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      font-size: 1rem;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #27ae60;
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #219150;
+    }
+    .result {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 1rem;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>告警设置</h1>
+    <form id="alert-form">
+      <label for="dingtalk_webhook_url">钉钉 Webhook URL</label>
+      <input type="text" id="dingtalk_webhook_url" name="dingtalk_webhook_url" placeholder="请输入钉钉机器人Webhook URL" required>
+      <button type="submit">保存设置</button>
+    </form>
+    <div class="result" id="result"></div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    // 页面加载时获取当前告警设置
+    axios.get('/alert-settings')
+      .then(function(response) {
+        if(response.data.dingtalk_webhook_url) {
+          document.getElementById('dingtalk_webhook_url').value = response.data.dingtalk_webhook_url;
+        }
+      })
+      .catch(function(error) {
+        document.getElementById('result').innerText = "获取当前设置失败：" + error;
+      });
+
+    // 表单提交时更新告警设置
+    document.getElementById('alert-form').addEventListener('submit', function(e){
+      e.preventDefault();
+      var webhookUrl = document.getElementById('dingtalk_webhook_url').value;
+      axios.post('/alert-settings', { dingtalk_webhook_url: webhookUrl })
+        .then(function(response){
+          document.getElementById('result').innerText = "设置更新成功！";
+        })
+        .catch(function(error){
+          document.getElementById('result').innerText = "更新失败：" + error;
+        });
+    });
+  </script>
+</body>
+</html>

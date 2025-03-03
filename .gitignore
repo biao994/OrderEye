@@ -1,0 +1,5 @@
+"venv/"      # 忽略 Python 虚拟环境
+"__pycache__/"   # 忽略 Python 缓存
+"*.log"      # 忽略日志文件
+".env"       # 忽略环境变量文件
+"node_modules/"   # 如果有前端代码，忽略 npm 依赖

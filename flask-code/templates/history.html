@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>订单历史查询 - 内部管理</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f5f6fa;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .filters {
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .filters > div {
+            display: flex;
+            align-items: center;
+        }
+        .filters label {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .filters input, .filters select {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .btn {
+            padding: 8px 16px;
+            background: #27ae60;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .btn:hover {
+            background: #219150;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table th, table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        table th {
+            background: #f0f0f0;
+        }
+        .status-normal {
+            color: green;
+            font-weight: bold;
+        }
+        .status-anomaly {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>订单历史查询</h1>
+        <div class="filters">
+            <div>
+                <label>开始日期:</label>
+                <input type="date" id="start_date">
+            </div>
+            <div>
+                <label>结束日期:</label>
+                <input type="date" id="end_date">
+            </div>
+            <div>
+                <label>条数:</label>
+                <input type="number" id="limit" value="10">
+            </div>
+            <div>
+                <label>货币单位:</label>
+                <select id="currency">
+                    <option value="CNY" selected>人民币 (CNY)</option>
+                    <option value="USD">美元 (USD)</option>
+                </select>
+            </div>
+            <div>
+                <label>订单状态:</label>
+                <select id="anomaly_status">
+                    <option value="">全部</option>
+                    <option value="normal">正常</option>
+                    <option value="anomaly">异常</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn" onclick="fetchOrders()">查询订单</button>
+        <div id="order-list"></div>
+    </div>
+
+    <script>
+        function fetchOrders() {
+            let startDate = document.getElementById("start_date").value;
+            let endDate = document.getElementById("end_date").value;
+            let limit = document.getElementById("limit").value;
+            let currency = document.getElementById("currency").value;
+            let anomalyStatus = document.getElementById("anomaly_status").value;
+            
+            let url = `/orders?limit=${limit}&currency=${currency}`;
+            if (startDate) url += `&start_date=${startDate}`;
+            if (endDate) url += `&end_date=${endDate}`;
+            if (anomalyStatus) url += `&anomaly_status=${anomalyStatus}`;
+            
+            axios.get(url)
+                .then(response => {
+                    let orders = response.data;
+                    if (orders.length === 0) {
+                        document.getElementById("order-list").innerHTML = "<p>没有找到订单</p>";
+                        return;
+                    }
+                    let html = `
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>订单号</th>
+                                    <th>用户</th>
+                                    <th>类型</th>
+                                    <th>金额</th>
+                                    <th>省市</th>
+                                    <th>时间</th>
+                                    <th>状态</th>
+                                    <th>IP</th>
+                                    <th>设备</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    orders.forEach(order => {
+                        html += `
+                            <tr>
+                                <td>${order.order_id}</td>
+                                <td>${order.user_id}</td>
+                                <td>${order.event_type}</td>
+                                <td>${order.amount} ${order.currency}</td>
+                                <td>${order.province}, ${order.city}</td>
+                                <td>${order.date}</td>
+                                <td class="${order.is_anomaly ? 'status-anomaly' : 'status-normal'}">
+                                    ${order.is_anomaly ? '异常' : '正常'}
+                                </td>
+                                <td>${order.ip || '-'}</td>
+                                <td>${order.device_id || '-'}</td>
+                            </tr>
+                        `;
+                    });
+                    html += `
+                            </tbody>
+                        </table>
+                    `;
+                    document.getElementById("order-list").innerHTML = html;
+                })
+                .catch(error => {
+                    console.error("查询失败:", error);
+                    document.getElementById("order-list").innerHTML = `<p style="color: red;">查询失败，请检查输入参数</p>`;
+                });
+        }
+    </script>
+</body>
+</html>

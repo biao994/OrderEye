@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>订单之眼OrderEye</title>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --success-color: #27ae60;
+            --warning-color: #f1c40f;
+            --danger-color: #e74c3c;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui;
+            background: linear-gradient(135deg, #f5f6fa 0%, #dcdde1 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            margin: 0 0.5rem;
+        }
+        
+        .btn:hover {
+            background: #1c2833;
+        }
+
+        .order-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 1rem;
+            border-left: 4px solid var(--success-color);
+        }
+
+        .order-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+
+        .order-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        .order-id {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .order-status {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .status-paid { background: #e8f6ea; color: var(--success-color); }
+        .status-shipped { background: #fff4e5; color: var(--warning-color); }
+        .status-cancel { background: #fee9e8; color: var(--danger-color); }
+
+        .order-detail {
+            display: grid;
+            gap: 0.5rem;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #666;
+        }
+
+        .order-amount {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            text-align: right;
+        }
+
+        .timestamp {
+            font-size: 0.9rem;
+            color: #95a5a6;
+            text-align: right;
+        }
+
+        @media (max-width: 768px) {
+            .order-card {
+                grid-template-columns: 1fr;
+            }
+            .order-amount, .timestamp {
+                text-align: left;
+            }
+        }
+
+        /* 加载动画 */
+        .loading-pulse {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <h1 style="color: var(--primary-color); margin-bottom: 1rem;">
+            <i class="fas fa-chart-line"></i> 实时订单监控
+        </h1>
+
+        <div style="margin-bottom: 1rem;">
+            <a href="/history" class="btn">📜 历史查询</a>
+            <a href="/alert-settings" class="btn">🔔 告警设置</a>
+        </div>
+
+        <div id="orders">
+            <!-- 动态内容区域 -->
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const ordersContainer = document.getElementById('orders');
+
+        // 订单状态映射
+        const statusConfig = {
+            'order_create': { text: '已支付', class: 'status-paid' },
+            'order_ship': { text: '已发货', class: 'status-shipped' },
+            'order_cancel': { text: '已取消', class: 'status-cancel' }
+        };
+
+        socket.on('order_update', data => {
+            const card = document.createElement('div');
+            card.className = 'order-card loading-pulse';
+
+            // 延迟加载动画消除
+            setTimeout(() => card.classList.remove('loading-pulse'), 300);
+
+            const status = statusConfig[data.event_type] || statusConfig['order_create'];
+            
+            card.innerHTML = `
+                <div class="order-header">
+                    <i class="fas fa-receipt"></i>
+                    <div>
+                        <div class="order-id">订单号: ${data.order_id}</div>
+                        <div class="order-status ${status.class}">${status.text}</div>
+                    </div>
+                </div>
+                
+                <div class="order-detail">
+                    <div class="detail-item">
+                        <i class="fas fa-user"></i>
+                        <span>${data.user_id}</span>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>${data.province} · ${data.city}</span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="order-amount">¥${data.amount}</div>
+                    <div class="timestamp">${new Date(data.timestamp * 1000).toLocaleString()}</div>
+                </div>
+            `;
+
+            ordersContainer.prepend(card);
+            
+            // 自动滚动保持最新可见
+            if(ordersContainer.children.length > 15) {
+                ordersContainer.lastElementChild.remove();
+            }
+        });
+    </script>
+</body>
+</html>
