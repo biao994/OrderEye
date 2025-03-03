@@ -1,4 +1,4 @@
-订单之眼OrderEye 
+OrderEye 订单之眼
 
 OrderEye 是一个基于 Go + Kafka + Flask 构建的 实时订单数据处理与监控系统，支持 订单数据模拟生成、Kafka 消息传输、异常检测、实时告警与可视化展示，并结合 PostgreSQL 进行高效存储和查询。
 
